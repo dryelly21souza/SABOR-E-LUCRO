@@ -52,7 +52,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load initial data
+  // Load initial data and subscribe to realtime
   useEffect(() => {
     async function loadData() {
       try {
@@ -65,7 +65,6 @@ export default function App() {
         if (data && data.state_json) {
           setState(data.state_json as AppState);
         } else if (!error) {
-           // Fallback to local storage if supabase empty but no error
            const saved = localStorage.getItem('sabor_lucro_state');
            if (saved) setState(JSON.parse(saved));
         }
@@ -76,6 +75,30 @@ export default function App() {
       }
     }
     loadData();
+
+    // Sincronização em tempo real
+    const channel = supabase
+      .channel('sabor_lucro_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sabor_lucro_state',
+          filter: 'id=eq.00000000-0000-0000-0000-000000000001'
+        },
+        (payload) => {
+          if (payload.new && payload.new.state_json) {
+            // Atualiza o estado local apenas com os dados mais recentes da nuvem
+            setState(payload.new.state_json as AppState);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Save data on change
