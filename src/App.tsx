@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect, useMemo, Dispatch, SetStateAction } from 'react';
+import { supabase } from './supabase';
 import { 
   LayoutDashboard, 
   ChefHat, 
@@ -47,16 +48,59 @@ const INITIAL_STATE: AppState = {
 type TabType = 'dashboard' | 'production' | 'fixed_costs' | 'labor' | 'pricing' | 'sales';
 
 export default function App() {
-  const [state, setState] = useState<AppState>(() => {
-    const saved = localStorage.getItem('sabor_lucro_state');
-    return saved ? JSON.parse(saved) : INITIAL_STATE;
-  });
-
+  const [state, setState] = useState<AppState>(INITIAL_STATE);
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Load initial data
   useEffect(() => {
+    async function loadData() {
+      try {
+        const { data, error } = await supabase
+          .from('sabor_lucro_state')
+          .select('state_json')
+          .eq('id', '00000000-0000-0000-0000-000000000001')
+          .single();
+        
+        if (data && data.state_json) {
+          setState(data.state_json as AppState);
+        } else if (!error) {
+           // Fallback to local storage if supabase empty but no error
+           const saved = localStorage.getItem('sabor_lucro_state');
+           if (saved) setState(JSON.parse(saved));
+        }
+      } catch (err) {
+        console.error("Erro ao carregar do Supabase:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  // Save data on change
+  useEffect(() => {
+    if (isLoading) return; // Don't save while loading
+    
+    // Save to local storage as backup
     localStorage.setItem('sabor_lucro_state', JSON.stringify(state));
-  }, [state]);
+
+    // Save to Supabase
+    const saveToSupabase = async () => {
+      try {
+        await supabase
+          .from('sabor_lucro_state')
+          .update({ state_json: state, updated_at: new Date().toISOString() })
+          .eq('id', '00000000-0000-0000-0000-000000000001');
+      } catch (err) {
+        console.error("Erro ao salvar no Supabase:", err);
+      }
+    };
+    
+    // Debounce to prevent too many requests
+    const timeoutId = setTimeout(saveToSupabase, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [state, isLoading]);
 
   // Calculations
   const totalFixedCosts = state.fixedCosts.gas + state.fixedCosts.energy + state.fixedCosts.transport + state.fixedCosts.internet + state.fixedCosts.others;
@@ -106,6 +150,16 @@ export default function App() {
           ))}
         </nav>
       </aside>
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-white/80 z-[100] flex items-center justify-center backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+            <p className="text-emerald-800 font-medium animate-pulse">Sincronizando dados...</p>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Nav - Mobile */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-50">
