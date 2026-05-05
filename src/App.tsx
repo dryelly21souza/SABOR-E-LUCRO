@@ -143,7 +143,6 @@ export default function App() {
     { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
     { id: 'production', label: 'Receitas', icon: ChefHat },
     { id: 'fixed_costs', label: 'Custos Fixos', icon: Wallet },
-    { id: 'labor', label: 'Mão de Obra', icon: Clock },
     { id: 'pricing', label: 'Precificação', icon: Tag },
     { id: 'sales', label: 'Vendas', icon: ShoppingBag },
   ];
@@ -223,7 +222,6 @@ export default function App() {
             {activeTab === 'dashboard' && <DashboardTab state={state} calculateUnitCost={calculateUnitCost} />}
             {activeTab === 'production' && <ProductionTab state={state} setState={setState} />}
             {activeTab === 'fixed_costs' && <FixedCostsTab state={state} setState={setState} />}
-            {activeTab === 'labor' && <LaborTab state={state} setState={setState} />}
             {activeTab === 'pricing' && <PricingTab state={state} calculateUnitCost={calculateUnitCost} />}
             {activeTab === 'sales' && <SalesTab state={state} setState={setState} calculateUnitCost={calculateUnitCost} />}
           </motion.div>
@@ -518,6 +516,21 @@ function FixedCostsTab({ state, setState }: { state: AppState, setState: Dispatc
               </div>
             </div>
           ))}
+
+          <div className="pt-4 border-t border-slate-100">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Mão de Obra (Valor por Hora)</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">R$</span>
+              <input 
+                type="number"
+                value={state.laborConfig.hourlyRate}
+                onChange={e => setState(prev => ({ ...prev, laborConfig: { hourlyRate: parseFloat(e.target.value) || 0 } }))}
+                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                placeholder="Ex: 15.00"
+              />
+            </div>
+            <p className="text-xs text-slate-500 mt-2">Dica: Inclua tempo de compras, limpeza e preparo.</p>
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -549,37 +562,6 @@ function FixedCostsTab({ state, setState }: { state: AppState, setState: Dispatc
   );
 }
 
-function LaborTab({ state, setState }: { state: AppState, setState: Dispatch<SetStateAction<AppState>> }) {
-  return (
-    <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6 max-w-2xl mx-auto">
-      <div className="text-center space-y-2 mb-8">
-        <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl w-fit mx-auto mb-4">
-          <Clock className="w-10 h-10" />
-        </div>
-        <h3 className="text-2xl font-bold text-slate-800">Quanto custa sua hora?</h3>
-        <p className="text-slate-500">Defina o valor que você deseja ganhar por hora de trabalho.</p>
-      </div>
-
-      <div className="space-y-4">
-        <label className="block text-center text-sm font-bold text-slate-600 uppercase tracking-widest">Valor por Hora</label>
-        <div className="relative">
-          <span className="absolute left-6 top-1/2 -translate-y-1/2 text-3xl text-slate-300 font-bold">R$</span>
-          <input 
-            type="number"
-            value={state.laborConfig.hourlyRate}
-            onChange={e => setState(prev => ({ ...prev, laborConfig: { hourlyRate: parseFloat(e.target.value) || 0 } }))}
-            className="w-full text-center text-6xl font-bold text-emerald-600 py-8 border-b-4 border-slate-100 focus:border-emerald-500 outline-none transition-colors"
-            placeholder="0.00"
-          />
-        </div>
-      </div>
-
-      <div className="bg-amber-50 p-6 rounded-2xl border border-amber-100 text-amber-900 text-sm leading-relaxed">
-        <strong>Dica de consultor:</strong> Lembre-se de considerar não apenas o tempo na cozinha, mas também compras, embalagem e limpeza. Uma boa média para iniciantes é entre R$ 15 e R$ 25 por hora.
-      </div>
-    </div>
-  );
-}
 
 function PricingTab({ state, calculateUnitCost }: { state: AppState, calculateUnitCost: (r: Recipe) => number }) {
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>(state.recipes[0]?.id || '');
