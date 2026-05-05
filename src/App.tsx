@@ -446,7 +446,7 @@ function ProductionTab({ state, setState }: { state: AppState, setState: Dispatc
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Qtd Produzida</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Qtd Produzida (Pacotes)</label>
                 <input 
                   type="number"
                   value={newRecipe.quantityProduced}
@@ -532,11 +532,11 @@ function ProductionTab({ state, setState }: { state: AppState, setState: Dispatc
                   <p className="text-xl font-bold text-slate-800">R$ {totalCost.toFixed(2)}</p>
                 </div>
                 <div className="bg-emerald-50 p-3 rounded-xl text-center">
-                  <p className="text-xs text-emerald-600 uppercase font-bold tracking-wider mb-1">Por Unidade</p>
+                  <p className="text-xs text-emerald-600 uppercase font-bold tracking-wider mb-1">Por Unidade (Pacote)</p>
                   <p className="text-xl font-bold text-emerald-700">R$ {(totalCost / recipe.quantityProduced).toFixed(2)}</p>
                 </div>
               </div>
-              <p className="text-sm text-slate-500">{recipe.ingredients.length} ingredientes • Rendimento: {recipe.quantityProduced} un</p>
+              <p className="text-sm text-slate-500">{recipe.ingredients.length} ingredientes • Rendimento: {recipe.quantityProduced} pacotes</p>
             </div>
           );
         })}
