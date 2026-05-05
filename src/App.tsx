@@ -141,7 +141,7 @@ export default function App() {
 
   const navItems = [
     { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
-    { id: 'production', label: 'Produção', icon: ChefHat },
+    { id: 'production', label: 'Receitas', icon: ChefHat },
     { id: 'fixed_costs', label: 'Custos Fixos', icon: Wallet },
     { id: 'labor', label: 'Mão de Obra', icon: Clock },
     { id: 'pricing', label: 'Precificação', icon: Tag },
