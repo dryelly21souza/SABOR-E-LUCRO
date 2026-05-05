@@ -361,6 +361,28 @@ function ProductionTab({ state, setState }: { state: AppState, setState: Dispatc
     });
   };
 
+  const editIngredient = (id: string) => {
+    const ing = newRecipe.ingredients?.find(i => i.id === id);
+    if (!ing) return;
+    
+    const ingName = prompt("Nome do ingrediente:", ing.name);
+    if (!ingName) return;
+
+    let ingCost = prompt(`Custo do ingrediente (atual: R$ ${ing.cost.toFixed(2)}):`, ing.cost.toString());
+    if (ingCost) {
+      ingCost = ingCost.replace(',', '.');
+      const parsedCost = parseFloat(ingCost);
+      if (!isNaN(parsedCost) && parsedCost >= 0) {
+        setNewRecipe({
+          ...newRecipe,
+          ingredients: newRecipe.ingredients?.map(i => i.id === id ? { ...i, name: ingName, cost: parsedCost } : i)
+        });
+      } else {
+        alert("Valor inválido! Por favor, insira um número válido (ex: 0.50 ou 0,50)");
+      }
+    }
+  };
+
   const saveRecipe = () => {
     if (newRecipe.name && newRecipe.ingredients?.length) {
       setState(prev => {
@@ -454,11 +476,14 @@ function ProductionTab({ state, setState }: { state: AppState, setState: Dispatc
             </div>
             <div className="space-y-2">
               {newRecipe.ingredients?.map(ing => (
-                <div key={ing.id} className="flex justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-                  <span>{ing.name}</span>
-                  <div className="flex gap-4 items-center">
-                    <span className="font-bold">R$ {ing.cost.toFixed(2)}</span>
-                    <button onClick={() => removeIngredient(ing.id)} className="text-rose-500">
+                <div key={ing.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                  <span className="font-medium">{ing.name}</span>
+                  <div className="flex gap-3 items-center">
+                    <span className="font-bold text-slate-700">R$ {ing.cost.toFixed(2)}</span>
+                    <button onClick={() => editIngredient(ing.id)} className="text-slate-400 hover:text-blue-500 transition-colors">
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => removeIngredient(ing.id)} className="text-slate-400 hover:text-rose-500 transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
