@@ -22,7 +22,8 @@ import {
   TrendingUp,
   TrendingDown,
   Edit2,
-  Plus
+  Plus,
+  PieChart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppState, Recipe, Sale, FixedCosts, LaborConfig, Ingredient } from './types';
@@ -46,7 +47,7 @@ const INITIAL_STATE: AppState = {
   sales: [],
 };
 
-type TabType = 'dashboard' | 'production' | 'fixed_costs' | 'labor' | 'pricing' | 'sales';
+type TabType = 'dashboard' | 'production' | 'fixed_costs' | 'pricing' | 'sales' | 'post_sales';
 
 export default function App() {
   const [state, setState] = useState<AppState>(INITIAL_STATE);
@@ -146,6 +147,7 @@ export default function App() {
     { id: 'fixed_costs', label: 'Custos Fixos', icon: Wallet },
     { id: 'pricing', label: 'Precificação', icon: Tag },
     { id: 'sales', label: 'Vendas', icon: ShoppingBag },
+    { id: 'post_sales', label: 'Pós Venda', icon: PieChart },
   ];
 
   return (
@@ -225,6 +227,7 @@ export default function App() {
             {activeTab === 'fixed_costs' && <FixedCostsTab state={state} setState={setState} />}
             {activeTab === 'pricing' && <PricingTab state={state} calculateUnitCost={calculateUnitCost} />}
             {activeTab === 'sales' && <SalesTab state={state} setState={setState} calculateUnitCost={calculateUnitCost} />}
+            {activeTab === 'post_sales' && <PostSalesTab state={state} />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -886,6 +889,85 @@ function SalesTab({ state, setState, calculateUnitCost }: { state: AppState, set
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function PostSalesTab({ state }: { state: AppState }) {
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const monthSales = state.sales.filter(s => s.date.startsWith(currentMonth));
+  
+  const totalRevenue = monthSales.reduce((sum, s) => sum + (s.unitPrice * s.quantitySold), 0);
+  
+  // Custo do Produto (apenas variável: ingredientes e mão de obra alocada)
+  const totalProductCost = monthSales.reduce((sum, s) => {
+    const recipe = state.recipes.find(r => r.id === s.recipeId);
+    if (!recipe) return sum;
+    
+    const ingredientsCost = recipe.ingredients.reduce((acc, ing) => acc + ing.cost, 0);
+    const ingredientsPerUnit = recipe.quantityProduced > 0 ? ingredientsCost / recipe.quantityProduced : 0;
+    
+    const laborTotal = state.laborConfig.hourlyRate * recipe.productionTimeHours;
+    const laborPerUnit = recipe.quantityProduced > 0 ? laborTotal / recipe.quantityProduced : 0;
+    
+    return sum + ((ingredientsPerUnit + laborPerUnit) * s.quantitySold);
+  }, 0);
+
+  const lucroBruto = totalRevenue - totalProductCost;
+
+  // Despesas Operacionais (Custos Fixos do Mês)
+  const despesasOperacionais = state.fixedCosts.gas + state.fixedCosts.energy + state.fixedCosts.transport + state.fixedCosts.internet + state.fixedCosts.others;
+
+  const lucroLiquido = lucroBruto - despesasOperacionais;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 max-w-3xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl w-fit mx-auto mb-4">
+            <PieChart className="w-10 h-10" />
+          </div>
+          <h3 className="text-2xl font-bold text-slate-800">Resultado do Mês</h3>
+          <p className="text-slate-500">Acompanhamento financeiro de Pós-Venda</p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="font-bold text-slate-700">Receita Total</span>
+            <span className="font-bold text-emerald-600">R$ {totalRevenue.toFixed(2)}</span>
+          </div>
+
+          <div className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <span className="font-medium text-slate-600">(-) Custo do Produto (Ingredientes + Mão de Obra)</span>
+            <span className="font-bold text-rose-500">- R$ {totalProductCost.toFixed(2)}</span>
+          </div>
+
+          <div className="flex justify-between items-center p-6 bg-emerald-50 border border-emerald-100 rounded-xl mt-4">
+            <span className="font-bold text-emerald-800 text-lg">Lucro Bruto</span>
+            <span className="font-bold text-emerald-700 text-xl">R$ {lucroBruto.toFixed(2)}</span>
+          </div>
+
+          <div className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100 mt-6">
+            <span className="font-medium text-slate-600">(-) Despesas Operacionais (Custos Fixos)</span>
+            <span className="font-bold text-rose-500">- R$ {despesasOperacionais.toFixed(2)}</span>
+          </div>
+
+          <div className={`flex justify-between items-center p-6 border rounded-xl mt-4 shadow-sm ${lucroLiquido >= 0 ? 'bg-emerald-600 border-emerald-700 text-white' : 'bg-rose-600 border-rose-700 text-white'}`}>
+            <span className="font-bold text-lg">Lucro Líquido</span>
+            <span className="font-bold text-2xl">R$ {lucroLiquido.toFixed(2)}</span>
+          </div>
+        </div>
+        
+        <div className="mt-8 p-5 bg-amber-50 rounded-xl border border-amber-100">
+           <h4 className="font-bold text-amber-800 flex items-center gap-2 mb-3">
+             <AlertCircle className="w-5 h-5" /> Entendendo seus números
+           </h4>
+           <p className="text-sm text-amber-900 leading-relaxed space-y-2">
+             <span className="block"><strong>Lucro Bruto:</strong> É o que sobra das vendas após pagar os custos diretos para fazer o produto (ingredientes e mão de obra daquela receita).</span>
+             <span className="block mt-2"><strong>Lucro Líquido:</strong> É o que realmente sobra no seu bolso após pagar TODAS as despesas operacionais do negócio (suas contas fixas de água, luz, internet, etc).</span>
+           </p>
+        </div>
       </div>
     </div>
   );
