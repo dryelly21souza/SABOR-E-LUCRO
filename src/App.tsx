@@ -17,11 +17,12 @@ import {
   Clock, 
   Tag, 
   ShoppingBag,
-  Plus,
   Trash2,
   AlertCircle,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Edit2,
+  Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AppState, Recipe, Sale, FixedCosts, LaborConfig, Ingredient } from './types';
@@ -362,13 +363,28 @@ function ProductionTab({ state, setState }: { state: AppState, setState: Dispatc
 
   const saveRecipe = () => {
     if (newRecipe.name && newRecipe.ingredients?.length) {
-      setState(prev => ({
-        ...prev,
-        recipes: [...prev.recipes, { ...newRecipe, id: Date.now().toString() } as Recipe]
-      }));
+      setState(prev => {
+        const isEditing = !!newRecipe.id;
+        if (isEditing) {
+          return {
+            ...prev,
+            recipes: prev.recipes.map(r => r.id === newRecipe.id ? (newRecipe as Recipe) : r)
+          };
+        } else {
+          return {
+            ...prev,
+            recipes: [...prev.recipes, { ...newRecipe, id: Date.now().toString() } as Recipe]
+          };
+        }
+      });
       setIsAdding(false);
       setNewRecipe({ name: '', ingredients: [], quantityProduced: 1, productionTimeHours: 1 });
     }
+  };
+
+  const editRecipe = (recipe: Recipe) => {
+    setNewRecipe(recipe);
+    setIsAdding(true);
   };
 
   const deleteRecipe = (id: string) => {
@@ -392,7 +408,7 @@ function ProductionTab({ state, setState }: { state: AppState, setState: Dispatc
 
       {isAdding && (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-          <h3 className="text-xl font-bold">Adicionar Receita</h3>
+          <h3 className="text-xl font-bold">{newRecipe.id ? 'Editar Receita' : 'Adicionar Receita'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Produto</label>
@@ -452,8 +468,16 @@ function ProductionTab({ state, setState }: { state: AppState, setState: Dispatc
           </div>
 
           <div className="flex gap-4 justify-end pt-4 border-t border-slate-100">
-            <button onClick={() => setIsAdding(false)} className="px-6 py-2 text-slate-500">Cancelar</button>
-            <button onClick={saveRecipe} className="bg-emerald-600 text-white px-8 py-2 rounded-xl">Salvar</button>
+            <button 
+              onClick={() => {
+                setIsAdding(false);
+                setNewRecipe({ name: '', ingredients: [], quantityProduced: 1, productionTimeHours: 1 });
+              }} 
+              className="px-6 py-2 text-slate-500 hover:bg-slate-100 rounded-xl"
+            >
+              Cancelar
+            </button>
+            <button onClick={saveRecipe} className="bg-emerald-600 text-white px-8 py-2 rounded-xl hover:bg-emerald-700">Salvar</button>
           </div>
         </div>
       )}
@@ -465,9 +489,14 @@ function ProductionTab({ state, setState }: { state: AppState, setState: Dispatc
             <div key={recipe.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-lg font-bold text-slate-800">{recipe.name}</h3>
-                <button onClick={() => deleteRecipe(recipe.id)} className="text-slate-400 hover:text-rose-500 transition-colors">
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                <div className="flex gap-3">
+                  <button onClick={() => editRecipe(recipe)} className="text-slate-400 hover:text-blue-500 transition-colors">
+                    <Edit2 className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => deleteRecipe(recipe.id)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="bg-slate-50 p-3 rounded-xl text-center">
