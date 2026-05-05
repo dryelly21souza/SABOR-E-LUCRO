@@ -337,12 +337,19 @@ function ProductionTab({ state, setState }: { state: AppState, setState: Dispatc
 
   const addIngredient = () => {
     const ingName = prompt("Nome do ingrediente:");
-    const ingCost = prompt("Custo do ingrediente (Ex: 10.50):");
+    let ingCost = prompt("Custo do ingrediente (Ex: 10.50 ou 0,50):");
     if (ingName && ingCost) {
-      setNewRecipe({
-        ...newRecipe,
-        ingredients: [...(newRecipe.ingredients || []), { id: Date.now().toString(), name: ingName, cost: parseFloat(ingCost) }]
-      });
+      ingCost = ingCost.replace(',', '.');
+      const parsedCost = parseFloat(ingCost);
+      
+      if (!isNaN(parsedCost) && parsedCost >= 0) {
+        setNewRecipe({
+          ...newRecipe,
+          ingredients: [...(newRecipe.ingredients || []), { id: Date.now().toString(), name: ingName, cost: parsedCost }]
+        });
+      } else {
+        alert("Valor inválido! Por favor, insira um número válido (ex: 0.50 ou 0,50)");
+      }
     }
   };
 
